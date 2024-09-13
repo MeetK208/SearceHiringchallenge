@@ -59,7 +59,7 @@ def getAllProject(request):
 
         for project in all_projects:
             # Fetch the project owner details
-            owner = User.objects.filter(userId=project.user).values('userId', 'username', 'email').first()
+            owner = User.objects.filter(userId=project.user.userId).values('userId', 'username', 'email').first()
 
             # Fetch collaborators for the project, excluding the project owner
             collaborators = ProjectUser.objects.filter(projectId=project.projectId).exclude(userId=user_id)
