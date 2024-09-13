@@ -107,6 +107,12 @@ def createProject(request):
     if not user_id:
         return Response({'status': 400, 'error': 'User not authenticated'})
 
+    project_id = request.data.get('projectId')
+    user_ids = request.data.get('userIds')  # This is the array of userIds
+
+    if not project_id or not user_ids:
+        return Response({'status': 400, 'error': 'Project ID and User IDs are required.'})
+
     required_fields = ['projectName', 'budget', 'totalPosition']
     if not all(request.data.get(field) for field in required_fields):
         return Response({'status': 400, 'error': 'Provide all required fields'})
@@ -125,16 +131,19 @@ def createProject(request):
         )
 
         project_data = ProjectSerializer(new_project).data
+        
+        
+        for user_id in user_ids:
+            ProjectUser.objects.create(projectId=new_project, userId=user_id)
 
-        new_project_user = ProjectUser.objects.create(userId=user, projectId=new_project)
+        # new_project_user = ProjectUser.objects.create(userId=user, projectId=new_project)
 
-        project_user_data = ProjectUserSerializer(new_project_user).data
+        # project_user_data = ProjectUserSerializer(new_project_user).data
 
         return Response({
             'status': 200,
             'message': 'Project created successfully',
             'project': project_data,
-            'projectUser': project_user_data
         })
 
     except User.DoesNotExist:
