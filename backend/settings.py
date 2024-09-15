@@ -80,6 +80,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://0.0.0.0:3000",     # Dockerized app running on local network
     "https://yourfrontenddomain.com",  # Deployed frontend
     "https://searcehiringchallenge.onrender.com",  # Deployed backend
+    "http://localhost:4200",
 ]
 
 MIDDLEWARE = [
@@ -121,18 +122,18 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
-# if os.environ.get("DEBUG"):
-#     print("Running Local Server DB")
-#     DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': BASE_DIR / 'db.sqlite3',
-#         }
-#     }
-# else:
-DATABASES = {
-    "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
-}
+if os.environ.get("DEBUG"):
+    print("Running Local Server DB")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
