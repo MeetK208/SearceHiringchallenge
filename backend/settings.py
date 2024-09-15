@@ -64,7 +64,9 @@ CORS_ALLOW_HEADERS = [
     'content-type',
     'authorization',
     'x-csrftoken'
-]CROS_ORIGIN_ALLOW_ALL = True
+]
+
+CROS_ORIGIN_ALLOW_ALL = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
