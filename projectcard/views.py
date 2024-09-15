@@ -47,35 +47,39 @@ def getAllProject(request):
         # Fetch projects owned by the user
         user_projects = Project.objects.filter(user_id=user_id)
 
-        # Fetch collaborator project IDs
+        # Fetch project IDs where the user is a collaborator
         collaborator_projects_ids = ProjectUser.objects.filter(userId=user_id).values_list('projectId', flat=True)
         collaborator_projects = Project.objects.filter(projectId__in=collaborator_projects_ids)
 
-        # Combine user's projects and collaborator projects
+        # Combine the projects owned by the user and projects they are a collaborator on
         all_projects = (user_projects | collaborator_projects).distinct()
 
-        # Prepare final result with project, owner, and collaborator details
+        # Prepare the final result including owner and collaborator details
         project_data = []
 
         for project in all_projects:
-            # Fetch the project owner details
+            # Check if the user is the owner of the project by checking `is_owner` in ProjectUser
+            is_owner = ProjectUser.objects.filter(userId=user_id, projectId=project.projectId, is_owner=True).exists()
+
+            # Fetch project owner details
             owner = User.objects.filter(userId=project.user.userId).values('userId', 'username', 'email').first()
 
-            # Fetch collaborators for the project, excluding the project owner
+            # Fetch collaborators for the project, including their `is_owner` status
             collaborators = ProjectUser.objects.filter(projectId=project.projectId).exclude(userId=user_id)
 
             collaborator_details = []
             for collaborator in collaborators:
-                # Access the userId directly and fetch user details
+                # Fetch user details for each collaborator
                 user = User.objects.filter(userId=collaborator.userId.userId).values('userId', 'username', 'email').first()
 
                 if user:
                     collaborator_details.append({
                         'userId': user['userId'],
                         'name': user['username'],
-                        'email': user['email']
+                        'email': user['email'],
+                        'is_owner': collaborator.is_owner  # Add the is_owner field here
                     })
-            
+
             # Serialize project details and include owner and collaborators
             serialized_project = ProjectSerializer(project).data
             serialized_project['owner'] = {
@@ -84,10 +88,11 @@ def getAllProject(request):
                 'email': owner['email']
             }  # Add owner details
             serialized_project['collaborators'] = collaborator_details  # Add collaborator details
+            serialized_project['is_owner'] = is_owner  # Add ownership flag for the current user
 
             project_data.append(serialized_project)
 
-        return  Response({ 
+        return Response({ 
             'status': 'success',
             'message': 'Projects retrieved successfully',
             'userid': user_id,
@@ -98,7 +103,6 @@ def getAllProject(request):
     except Exception as e:
         logger.error(f"Error retrieving projects for user {user_id}: {e}")
         return Response({'status': 'error', 'message': str(e)})
-
 
 @api_view(['POST'])
 @decorator_from_middleware(AuthenticationMiddleware)
@@ -128,14 +132,18 @@ def createProject(request):
 
         project_data = ProjectSerializer(new_project).data
         
-        print(coplanners)
+        print("coplanners",coplanners)
         if coplanners:
             for useridAdd in coplanners:
                 useradd = User.objects.get(pk=useridAdd)
                 ProjectUser.objects.create(projectId=new_project, userId=useradd)
+        
+        # Creating ProjectUser instance for the owner
+        owner_project_user = ProjectUser.objects.create(userId=user, projectId=new_project, is_owner=True)
 
-        ProjectUser.objects.create(userId=user, projectId=new_project, is_owner = True)
-
+        # Optional: Explicitly save the object if needed (usually not required with create())
+        owner_project_user.save()
+        print(owner_project_user)
         # project_user_data = ProjectUserSerializer(new_project_user).data
 
         return  Response({ 

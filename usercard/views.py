@@ -28,31 +28,32 @@ def extract_budget_info(budget):
 
 def KPILogic(data, totalBudget):
     try:
-        # Convert totalBudget to a float, ensuring it's numeric
+        # Split totalBudget to extract the numeric value and the currency type
         totalBudget, currency_type = totalBudget.split()
-        print(totalBudget,currency_type )
+        totalBudget = int(totalBudget)
+
         # Create DataFrame
         df = pd.DataFrame(data)
+
         # Ensure 'budget' column exists
         if 'budget' not in df.columns:
             raise KeyError("'budget' column is missing in the data")
 
-        # Extract budget information
+        # Extract budget information from each entry
         df[['rupees', 'currency_type']] = df['budget'].apply(lambda x: pd.Series(extract_budget_info(x)))
-        
+
         # Ensure rupees are numeric
         df['rupees'] = pd.to_numeric(df['rupees'], errors='coerce').fillna(0)
-        
+
         # Convert 'Cr' to actual amount in rupees
         df['rupeese'] = df.apply(lambda row: row['rupees'] * 100 if row['currency_type'] == 'Cr' else row['rupees'], axis=1)
-        
-        print(df)
+
         # Group by department and sum
         grouped_df = df.groupby('department')['rupeese'].sum().reset_index()
-        print(grouped_df)
-        # Calculate percentage used
-        grouped_df['percentage_used'] = round((grouped_df['rupeese'] / (int(totalBudget) * 100)) * 100)
-        print("Lakhs",df['rupeese'].sum())
+
+        # Calculate percentage of the budget used by department
+        grouped_df['percentage_used'] = round((grouped_df['rupeese'] / (totalBudget * 100)) * 100)
+
         # Convert to JSON
         json_result = grouped_df.to_json(orient='records')
         return json_result, df['rupeese'].sum()
@@ -60,15 +61,26 @@ def KPILogic(data, totalBudget):
     except KeyError as e:
         logger.error(f"Missing key in data: {e}")
         return json.dumps([])  # Return empty JSON if there's an error
-    except ValueError as e:
-        logger.error(f"Value error: {e}")
-        return json.dumps([])  # Return empty JSON if there's an error
-    except TypeError as e:
-        logger.error(f"Type error: {e}")
-        return json.dumps([])  # Return empty JSON if there's an error
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         return json.dumps([])  # Return empty JSON if there's an error
+
+def get_project_and_authorize(user_id, project_id):
+    try:
+        # Check if the user is the project owner
+        project = Project.objects.get(projectId=int(project_id))
+        if project.user_id == int(user_id):
+            return project, True
+
+        # Check if the user is a collaborator on the project
+        is_collaborator = ProjectUser.objects.filter(Q(projectId=project) & Q(userId=int(user_id))).exists()
+        if is_collaborator:
+            return project, True
+
+        return None, False
+
+    except Project.DoesNotExist:
+        return None, False
 
 @api_view(['GET'])
 @decorator_from_middleware(AuthenticationMiddleware)
@@ -77,12 +89,17 @@ def getAllUserCard(request):
     projectId = request.query_params.get('projectId')  # Get project ID from query params
 
     if not user_id:
-        Response({'status': 'error', 'message': 'User not authenticated'})
+        return Response({'status': 'error', 'message': 'User not authenticated'})
 
     if not projectId:
         return Response({'status': 'error', 'message': 'Project ID is required'})
 
     try:
+        # Check if the user is authorized as either an owner or collaborator
+        project, authorized = get_project_and_authorize(user_id, projectId)
+        if not authorized:
+            return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
+        
         # Fetch all ProjectCardUser entries related to the given project ID
         project_users = ProjectCardUser.objects.filter(projectCard=int(projectId))
         if not project_users.exists():
@@ -90,28 +107,34 @@ def getAllUserCard(request):
 
         # Serialize the data of ProjectCardUser
         serializer = ProjectCardUserSerializer(project_users, many=True)
+
+        # Fetch total budget of the project
         ProjectData = Project.objects.filter(projectId=int(projectId))
         totalBudget = 1
         if ProjectData.exists():
             totalBudget = ProjectData.first().budget
-        ruppese, currency = totalBudget.split()
+
+        # Split the budget value and currency
+        rupees, currency = totalBudget.split()
         DashboardMatrix, usedBudget = KPILogic(serializer.data, totalBudget)
 
-        if (currency.lower() == "lakhs"):
-            usedBudget = str(usedBudget) + " lakhs"
+        # Adjust budget output based on currency type
+        if currency.lower() == "lakhs":
+            usedBudget = f"{usedBudget} lakhs"
         else:
-            usedBudget = str(usedBudget/100) + " Cr"
-        
-        return  Response({ 
-             'status': 'success',
+            usedBudget = f"{usedBudget / 100} Cr"
+
+        # Return the successful response with user card data and budget details
+        return Response({ 
+            'status': 'success',
             'message': 'User cards retrieved successfully',
             'userId': user_id,
             'email': request.COOKIES.get('email'),
             'projectId': projectId,
             'userCards': serializer.data,
-            "DashboardMatrix": json.loads(DashboardMatrix),
-            "totalBudget": totalBudget,
-            "usedBudget" : usedBudget
+            'DashboardMatrix': json.loads(DashboardMatrix),
+            'totalBudget': totalBudget,
+            'usedBudget': usedBudget
         })
 
     except Exception as e:
@@ -136,6 +159,11 @@ def CreateUserCard(request):
         return Response({'status': 'error', 'message': 'Provide all required fields'})
 
     try:
+        
+        project, authorized = get_project_and_authorize(user_id, projectId)
+        if not authorized:
+            return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
+        
         project = Project.objects.get(projectId=int(projectId))
         if project.user_id != int(user_id):
             is_collaborator = ProjectUser.objects.filter(
@@ -191,6 +219,10 @@ def updateOneUserCard(request):
         return Response({'status': 'error', 'message': 'Project ID is required'})
     
     try:
+        project, authorized = get_project_and_authorize(user_id, projectId)
+        if not authorized:
+            return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
+
         project_card_user = ProjectCardUser.objects.filter(Q(user_id=user_id) & Q(projectCard=projectId)).first()
 
         if not project_card_user:
@@ -231,6 +263,10 @@ def deleteOneUserCard(request):
         return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
 
     try:
+        project, authorized = get_project_and_authorize(user_id, projectId)
+        if not authorized:
+            return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
+
         project_user_card = ProjectUserCard.objects.get(projectId=project_id, userId=user_id)
         project_user_card.delete()
         return Response({'status': 'success', 'message': 'User card deleted successfully'})
@@ -257,6 +293,10 @@ def updateBudget(request):
         return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
     
     try:
+        project, authorized = get_project_and_authorize(user_id, projectId)
+        if not authorized:
+            return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
+
         updatedBudget = request.data.get('budget')
         if not updatedBudget:
             return Response({'status': 'error', 'message': 'Please provide a valid Total Budget'})
