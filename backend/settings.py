@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-e)21&&p2&ck1_k)r(8mu^8+-%3y%yw)(csmn5(p1j*)yzh_6#)
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
 
-ALLOWED_HOSTS = ["searcehiringchallenge.onrender.com", "", "127.0.0.1", "0.0.0.0"]
+ALLOWED_HOSTS = ["searcehiringchallenge.onrender.com", "*", "127.0.0.1", "0.0.0.0"]
 
 
 # Application definition
@@ -46,11 +46,25 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'rest_framework',
+    'corsheaders',
     'register',
     'projectcard',
     'usercard',
 ]
-CROS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS"
+]
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',
+    'x-csrftoken'
+]CROS_ORIGIN_ALLOW_ALL = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -132,6 +146,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+APPEND_SLASH = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/

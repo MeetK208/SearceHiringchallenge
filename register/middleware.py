@@ -27,6 +27,6 @@ class AuthenticationMiddleware(MiddlewareMixin):
             user = User.objects.get(pk=user_id, email=email)
             request.user = user
         except Exception as e:
-            return Response({'status': 500, 'error': str(e)})
+            return Response({'status': 'error', 'message': str(e)})
 
             # return redirect('/login/')

@@ -19,11 +19,10 @@ def getData(request):
     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
     
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
     data = User.objects.all()
     serializer = UserSerializer(data, many = True)
-    return Response({
-        'status': 200,
+    return Response({'status': 'success',
         'message': serializer.data
     })
 
@@ -34,7 +33,7 @@ def postData(request):
     serializer = UserSerializer(data=request.data)
     
     if not request.data.get('email') or not request.data.get('password') or not request.data.get('role'):
-        return Response({'status': 400, 'error': 'All Feilds are required'})
+        return Response({'status': 'error', 'message': 'All Feilds are required'})
 
     # Validate the serializer data
     if serializer.is_valid():
@@ -47,8 +46,8 @@ def postData(request):
         # Serialize the user object after saving
         user_data = UserSerializer(user).data
         
-        return Response({
-            'status': 200,
+        return  Response({ 
+             'status': 'success',
             'message': 'Data processed successfully',
             'encrypted_password': enc_password,
             'user': user_data,  # Serialized user data
@@ -56,8 +55,8 @@ def postData(request):
     
     # Return errors if validation fails
     return Response({
-        'status': 400,
-        'errors': serializer.errors
+        'status': 'error',
+        'message': serializer.errors
     })
 
 
@@ -68,7 +67,7 @@ def postData(request):
     serializer = UserSerializer(data=request.data)
     
     if not request.data.get('email') or not request.data.get('password') or not request.data.get('role'):
-        return Response({'status': 400, 'error': 'All Feilds are required'})
+        return Response({'status': 'error', 'message': 'All Feilds are required'})
 
     # Validate the serializer data
     if serializer.is_valid():
@@ -81,8 +80,8 @@ def postData(request):
         # Serialize the user object after saving
         user_data = UserSerializer(user).data
         
-        return Response({
-            'status': 200,
+        return  Response({ 
+             'status': 'success',
             'message': 'Data processed successfully',
             'encrypted_password': enc_password,
             'user': user_data,  # Serialized user data
@@ -90,8 +89,8 @@ def postData(request):
     
     # Return errors if validation fails
     return Response({
-        'status': 400,
-        'errors': serializer.errors
+        'status': 'error',
+        'message': serializer.errors
     })
 
 
@@ -101,13 +100,13 @@ def loginData(request):
     password = request.data.get('password')
     role = request.data.get('role')
 
-    if not email or not password or not role:
-        return Response({'status': 400, 'error': 'All fields are required'})
+    if not email or not password:
+        return Response({'status': 'error', 'message': 'All fields are required'})
 
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
-        return Response({'status': 400, 'error': 'User does not exist'})
+        return Response({'status': 'error', 'message': 'User does not exist'})
     
     if user.verifyPassword(password):  # Use check_password for hashed passwords
         # Log the user in and set session
@@ -130,12 +129,11 @@ def loginData(request):
         return response
 
     else:
-        return Response({'status': 400, 'error': 'Invalid password'})
+        return Response({'status': 'error', 'message': 'Invalid password'})
 
 @api_view(['POST'])
 def logoutData(request):
     logout(request)
-    return Response({
-        'status': 200,
+    return Response({'status': 'success',
         'message': 'Logout successful'
     })

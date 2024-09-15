@@ -41,7 +41,7 @@ def getAllProject(request):
     user_id = get_authenticated_user(request)
 
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        return Response({'status': 'error', 'message': 'User not authenticated'})
 
     try:
         # Fetch projects owned by the user
@@ -87,8 +87,8 @@ def getAllProject(request):
 
             project_data.append(serialized_project)
 
-        return Response({
-            'status': 200,
+        return  Response({ 
+            'status': 'success',
             'message': 'Projects retrieved successfully',
             'userid': user_id,
             'email': request.COOKIES.get('email'),
@@ -97,7 +97,7 @@ def getAllProject(request):
 
     except Exception as e:
         logger.error(f"Error retrieving projects for user {user_id}: {e}")
-        return Response({'status': 500, 'error': str(e)})
+        return Response({'status': 'error', 'message': str(e)})
 
 
 @api_view(['POST'])
@@ -105,13 +105,13 @@ def getAllProject(request):
 def createProject(request):
     user_id = get_authenticated_user(request)
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
 
     coplanners = request.data.get('coplanners')  # This is the array of userIds
 
     required_fields = ['projectName', 'budget', 'totalPosition']
     if not all(request.data.get(field) for field in required_fields):
-        return Response({'status': 400, 'error': 'Provide all required fields'})
+        return Response({'status': 'error', 'message': 'Provide all required fields'})
 
     try:
         user = User.objects.get(pk=user_id)
@@ -138,19 +138,19 @@ def createProject(request):
 
         # project_user_data = ProjectUserSerializer(new_project_user).data
 
-        return Response({
-            'status': 200,
+        return  Response({ 
+            'status': 'success',
             'message': 'Project created successfully',
             'project': project_data,
         })
 
     except User.DoesNotExist:
         logger.error(f"User {user_id} not found.")
-        return Response({'status': 400, 'error': 'User not found'})
+        return Response({'status': 'error', 'message': 'User not found'})
 
     except Exception as e:
         logger.error(f"Error creating project for user {user_id}: {e}")
-        return Response({'status': 500, 'error': 'Failed to create project'})
+        return Response({'status': 'error', 'message': 'Failed to create project'})
 
 
 @api_view(['GET'])
@@ -160,26 +160,26 @@ def getOneProjectCard(request):
     projectId = request.query_params.get('projectId')
 
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
 
     if not projectId:
-        return Response({'status': 400, 'error': 'Please provide a valid projectId'})
+        return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
 
     try:
         project, authorized = get_project_and_authorize(user_id, projectId)
         if not authorized:
-            return Response({'status': 400, 'message': 'You are not authorized to view this project'})
+            return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
 
         project_data = ProjectSerializer(project).data
 
-        return Response({
-            'status': 200,
+        return  Response({ 
+             'status': 'success',
             'message': 'Project found successfully',
             'project': project_data
         })
     except Exception as e:
         logger.error(f"Error fetching project {projectId} for user {user_id}: {e}")
-        return Response({'status': 500, 'error': 'Failed to retrieve project'})
+        return Response({'status': 'error', 'message': 'Failed to retrieve project'})
 
 
 @api_view(['PUT'])
@@ -189,16 +189,16 @@ def editOneProjectCard(request):
     project_id = request.query_params.get('projectId')
 
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
 
     if not project_id:
-        return Response({'status': 400, 'error': 'Project ID is required'})
+        return Response({'status': 'error', 'message': 'Project ID is required'})
 
     try:
         # Retrieve project and check authorization
         project, authorized = get_project_and_authorize(user_id, project_id)
         if not authorized:
-            return Response({'status': 403, 'message': 'You are not authorized to edit this project'})
+            return Response({'status': 'error', 'message': 'You are not authorized to edit this project'})
         
         # Update 'last_edited_by_userId'
         request.data['last_edited_by_userId'] = user_id
@@ -209,18 +209,18 @@ def editOneProjectCard(request):
             updated_project = serializer.save()
             project_data = ProjectSerializer(updated_project).data
             return Response({
-                'status': 200,
+                'status': 'success',
                 'message': 'Project updated successfully',
                 'project': project_data
             })
-        return Response({'status': 400, 'errors': serializer.errors})
+        return Response({'status': 'error', 'message': serializer.errors})
 
     except Project.DoesNotExist:
         logger.error(f"Project {project_id} does not exist for user {user_id}")
-        return Response({'status': 404, 'error': 'Project not found'})
+        return Response({'status': 'error', 'message': 'Project not found'})
     except Exception as e:
         logger.error(f"Error updating project {project_id} for user {user_id}: {e}")
-        return Response({'status': 500, 'error': 'Failed to update project'})
+        return Response({'status': 'error', 'message': 'Failed to update project'})
 
 
 @api_view(['DELETE'])
@@ -230,22 +230,22 @@ def deleteOneProjectCard(request):
     projectId = request.query_params.get('projectId')
 
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
 
     if not projectId:
-        return Response({'status': 400, 'error': 'Please provide a valid projectId'})
+        return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
 
     try:
         project, authorized = get_project_and_authorize(user_id, projectId)
         if not authorized:
-            return Response({'status': 400, 'message': 'You are not authorized to delete this project'})
+            return Response({'status': 'error', 'message': 'You are not authorized to delete this project'})
 
         project.delete()
-        return Response({'status': 200, 'message': 'Project deleted successfully'})
+        return Response({'status': 'success', 'message': 'Project deleted successfully'})
 
     except Exception as e:
         logger.error(f"Error deleting project {projectId} for user {user_id}: {e}")
-        return Response({'status': 500, 'error': 'Failed to delete project'})
+        return Response({'status': 'success', 'message': 'Failed to delete project'})
 
 @api_view(['GET'])
 @decorator_from_middleware(AuthenticationMiddleware)
@@ -253,20 +253,20 @@ def all_usersList(request):
     print("Herr")
     user_id = get_authenticated_user(request)
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
 
     try:
         # Fetch all users except the authenticated user
         all_users = User.objects.exclude(userId=user_id).values('userId', 'username', 'email')
         
         return Response({
-            'status': 200, 
+            'status': 'success', 
             'message': 'Collaborators retrieved successfully',
             'all_users': list(all_users)  # Ensure it’s a list
         })
     except Exception as e:
         logger.error(f"Error retrieving collaborators for user {user_id}: {e}")
-        return Response({'status': 500, 'error': 'Failed to retrieve collaborators'})
+        return Response({'status': 'success',  'message': 'Failed to retrieve collaborators'})
 
 
 
@@ -293,7 +293,7 @@ def all_usersList(request):
 #     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
 
 #     if not user_id:
-#         return Response({'status': 400, 'error': 'User not authenticated'})
+#         Response({'status': 'error', 'message': 'User not authenticated'})
 
 #     try:
 #         # Projects directly associated with the user
@@ -319,9 +319,9 @@ def all_usersList(request):
 #         })
 
 #     except Project.DoesNotExist:
-#         return Response({'status': 404, 'error': 'Projects not found'})
+#         return Response({'status': 'error', 'message': 'Projects not found'})
 #     except Exception as e:
-#         return Response({'status': 500, 'error': str(e)})
+#         return Response({'status': 'error', 'message': str(e)})
 
 
 # @api_view(['POST'])
@@ -330,11 +330,11 @@ def all_usersList(request):
 #     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
 
 #     if not user_id:
-#         return Response({'status': 400, 'error': 'User not authenticated'})
+#         Response({'status': 'error', 'message': 'User not authenticated'})
 
 #     # Check if all required fields are present
 #     if not request.data.get('projectName') or not request.data.get('budget') or not request.data.get('totalPosition'):
-#         return Response({'status': 400, 'error': 'Provide all required fields'})
+#         return Response({'status': 'error', 'message': 'Provide all required fields'})
 
 #     try:
 #         user = User.objects.get(pk=user_id)  # Assuming you have the userId from cookies
@@ -368,11 +368,11 @@ def all_usersList(request):
 #         })
 
 #     except User.DoesNotExist:
-#         return Response({'status': 400, 'error': 'User not found'})
+#         return Response({'status': 'error', 'message': 'User not found'})
 
 #     # Return errors if the request data is invalid
 #     return Response({
-#         'status': 400,
+#         'status': 'error',
 #         'error': 'Invalid data'
 #     })
 
@@ -384,12 +384,12 @@ def all_usersList(request):
 #     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
 #     print("GetOne")
 #     if not user_id:
-#         return Response({'status': 400, 'error': 'User not authenticated'})
+#         Response({'status': 'error', 'message': 'User not authenticated'})
 
 #     projectId = request.query_params.get('projectId')
     
 #     if not projectId:
-#         return Response({'status': 400, 'error': 'Please provide a valid projectId'})
+#         return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
     
 #     try:
 #         project = Project.objects.get(projectId=int(projectId))
@@ -400,7 +400,7 @@ def all_usersList(request):
 #             ).exists()
 
 #             if not is_collaborator:
-#                 return Response({'status': 400, 'message': 'You are Not Authorized to View This Project!! Please Check ProjectId'})
+#                 return Response({'status': 'error', 'message': 'You are Not Authorized to View This Project!! Please Check ProjectId'})
 
         
 #         project_data = ProjectSerializer(project).data
@@ -416,7 +416,7 @@ def all_usersList(request):
 #             # 'projectUser': project_user_data  # Serialized project-user data (optional)
 #         })
 #     except Project.DoesNotExist:
-#         return Response({'status': 400, 'error': 'Project not found'})
+#         return Response({'status': 'error', 'message': 'Project not found'})
     
     
     
@@ -427,11 +427,11 @@ def all_usersList(request):
 #     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
     
 #     if not user_id:
-#         return Response({'status': 400, 'error': 'User not authenticated'})
+#         Response({'status': 'error', 'message': 'User not authenticated'})
     
 #     project_id = request.query_params.get('projectId')
 #     if not project_id:
-#         return Response({'status': 400, 'error': 'Project ID is required'})
+#         return Response({'status': 'error', 'message': 'Project ID is required'})
     
 #     try:
 #         project = Project.objects.get(projectId=int(project_id))
@@ -441,9 +441,9 @@ def all_usersList(request):
 #             ).exists()
 
 #             if not is_collaborator:
-#                 return Response({'status': 400, 'message': 'You are Not Authorized to Edit This Project!! Please Check ProjectId'})
+#                 return Response({'status': 'error', 'message': 'You are Not Authorized to Edit This Project!! Please Check ProjectId'})
 #     except Project.DoesNotExist:
-#         return Response({'status': 404, 'error': 'Project not found'})
+#         Response({'status': 'error', 'message': 'Project not found'})
     
 #     serializer = ProjectSerializer(project, data=request.data, partial=True)  # Use partial=True for partial updates
 
@@ -458,8 +458,8 @@ def all_usersList(request):
 #         })
     
 #     return Response({
-#         'status': 400,
-#         'errors': serializer.errors
+#         'status': 'error',
+#         , 'message': serializer.errors
 #     })
 
 
@@ -470,27 +470,27 @@ def all_usersList(request):
 #     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
     
 #     if not user_id:
-#         return Response({'status': 400, 'error': 'User not authenticated'})
+#         Response({'status': 'error', 'message': 'User not authenticated'})
 
     
 #     projectId = request.query_params.get('projectId')
     
     
 #     if not projectId:
-#         return Response({'status': 400, 'error': 'Please provide a valid projectId'})
+#         return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
     
 #     try:
 #         project = Project.objects.get(projectId=int(projectId))
         
 #         if project.user_id != int(user_id):
-#             return Response({'status': 400, 'message': 'You are Not Authorized to delete'})
+#             return Response({'status': 'error', 'message': 'You are Not Authorized to delete'})
         
 #         project.delete()  # Delete the project
         
-#         return Response({'status': 200, 'message': 'Project deleted successfully'})
+#         return Response({'status': 'success', 'message': 'Project deleted successfully'})
     
 #     except Project.DoesNotExist:
-#         return Response({'status': 404, 'error': 'Project not found'})
+#         Response({'status': 'error', 'message': 'Project not found'})
 
 
 
