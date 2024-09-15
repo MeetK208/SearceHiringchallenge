@@ -8,7 +8,6 @@ def getUserIdEmail(request):
         email = request.COOKIES.get('email')
         user_id = request.COOKIES.get('userId')
         return user_id, email
-    print(request.headers.get('Cookies'))
     if cookies_header:
         # Initialize a dictionary to store parsed cookies
         cookies = {}
