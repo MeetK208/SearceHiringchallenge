@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-e)21&&p2&ck1_k)r(8mu^8+-%3y%yw)(csmn5(p1j*)yzh_6#)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["searcehiringchallenge.onrender.com", "", "127.0.0.1", "0.0.0.0"]
+ALLOWED_HOSTS = ["searcehiringchallenge.onrender.com", "*", "127.0.0.1", "0.0.0.0"]
 
 
 # Application definition
@@ -45,14 +45,29 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'register',
     'projectcard',
     'usercard',
 ]
-
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS"
+]
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',
+    'x-csrftoken'
+]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
