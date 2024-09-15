@@ -211,6 +211,7 @@ def CreateUserCard(request):
 def updateOneUserCard(request):
     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
     projectId = request.query_params.get('projectId')  # Get project ID from query params
+    usercard_Id = request.query_params.get('cardId')  # Get project ID from query params
 
     if not user_id:
         Response({'status': 'error', 'message': 'User not authenticated'})
@@ -223,7 +224,7 @@ def updateOneUserCard(request):
         if not authorized:
             return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
 
-        project_card_user = ProjectCardUser.objects.filter(Q(user_id=user_id) & Q(projectCard=projectId)).first()
+        project_card_user = ProjectCardUser.objects.filter(Q(carduserId=int(usercard_Id)) & Q(projectCard=int(projectId))).first()
 
         if not project_card_user:
             return Response({'status': 'error', 'message': 'User card not found or you do not have permission to update'})
@@ -253,25 +254,26 @@ def updateOneUserCard(request):
 @decorator_from_middleware(AuthenticationMiddleware)
 def deleteOneUserCard(request):
     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
+    usercard_Id = request.query_params.get('cardId')
     
     if not user_id:
         Response({'status': 'error', 'message': 'User not authenticated'})
 
     project_id = request.query_params.get('projectId')
     
-    if not project_id:
-        return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
+    if not project_id or not usercard_Id:
+        return Response({'status': 'error', 'message': 'Please provide a valid projectId or UsercardId'})
 
     try:
-        project, authorized = get_project_and_authorize(user_id, projectId)
+        project, authorized = get_project_and_authorize(user_id, project_id)
         if not authorized:
             return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
 
-        project_user_card = ProjectUserCard.objects.get(projectId=project_id, userId=user_id)
+        project_user_card = ProjectCardUser.objects.get(projectCard=project_id, carduserId=usercard_Id)
         project_user_card.delete()
         return Response({'status': 'success', 'message': 'User card deleted successfully'})
     
-    except ProjectUserCard.DoesNotExist:
+    except ProjectCardUser.DoesNotExist:
         return Response({'status': 'error', 'message': 'User card not found'})
 
     except Exception as e:

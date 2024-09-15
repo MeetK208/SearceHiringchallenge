@@ -51,7 +51,10 @@ INSTALLED_APPS = [
     'projectcard',
     'usercard',
 ]
+
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 CORS_ALLOW_METHODS = [
     "GET",
     "POST",
@@ -65,9 +68,6 @@ CORS_ALLOW_HEADERS = [
     'authorization',
     'x-csrftoken'
 ]
-
-CROS_ORIGIN_ALLOW_ALL = True
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -105,18 +105,19 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
-# import os
-
-DATABASES = {
-    "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
-}
+if os.environ.get("DEBUG"):
+    print("Running Local Server DB")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
