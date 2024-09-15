@@ -15,6 +15,7 @@ from projectcard.models import *
 import pandas as pd
 import json
 from utils.authHelper import *
+from rest_framework.pagination import PageNumberPagination
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,11 @@ def get_project_and_authorize(user_id, project_id):
     except Project.DoesNotExist:
         return None, False
 
+class CustomPagination(PageNumberPagination):
+    page_size = 10  # You can override the global setting here if needed
+    page_size_query_param = 'page_size'  # Allow the user to control the page size
+    max_page_size = 20  # Max limit for page size
+
 @api_view(['GET'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def getAllUserCard(request):
@@ -103,14 +109,12 @@ def getAllUserCard(request):
             return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
         
         # Fetch all ProjectCardUser entries related to the given project ID
-        project_users = ProjectCardUser.objects.filter(projectCard=int(projectId))
+        project_users = ProjectCardUser.objects.filter(projectCard=int(projectId)).order_by('id')
         if not project_users.exists():
             return Response({'status': 'error', 'message': 'No user cards found for this project'})
 
         # Serialize the data of ProjectCardUser
         serializer = ProjectCardUserSerializer(project_users, many=True)
-
-        # Fetch total budget of the project
         ProjectData = Project.objects.filter(projectId=int(projectId))
         totalBudget = 1
         if ProjectData.exists():
@@ -125,9 +129,16 @@ def getAllUserCard(request):
             usedBudget = f"{usedBudget} lakhs"
         else:
             usedBudget = f"{usedBudget / 100} Cr"
+        paginator = CustomPagination()
+        paginated_users = paginator.paginate_queryset(project_users, request)
 
-        # Return the successful response with user card data and budget details
-        return Response({ 
+        # Serialize the paginated data of ProjectCardUser
+        serializer = ProjectCardUserSerializer(paginated_users, many=True)
+
+        # Fetch total budget of the project
+
+        # Return the successful paginated response with user card data and budget details
+        return paginator.get_paginated_response({ 
             'status': 'success',
             'message': 'User cards retrieved successfully',
             'userId': user_id,
@@ -142,7 +153,6 @@ def getAllUserCard(request):
     except Exception as e:
         logger.error(f"Error in getAllUserCard view: {e}")
         return Response({'status': 'error', 'message': 'An error occurred while retrieving user cards'})
-
 
 @api_view(['POST'])
 @decorator_from_middleware(AuthenticationMiddleware)
@@ -324,3 +334,52 @@ def updateBudget(request):
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         return Response({'status': 'error', 'message': 'An error occurred while updating the budget'})
+
+
+@api_view(['GET'])
+def updateBudget(request):
+    user_id, email_id = getUserIdEmail(request)  # Get user ID from cookies
+
+    if not user_id:
+        return Response({'status': 'error', 'message': 'User not authenticated'})
+
+    project_id = request.query_params.get('projectId')
+    
+    if not project_id:
+        return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
+    
+    try:
+        project, authorized = get_project_and_authorize(user_id, project_id)
+        if not authorized:
+            return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
+
+        # Search functionality
+        department = request.query_params.get('department')
+        designation = request.query_params.get('designation')
+        location = request.query_params.get('location')
+        
+        filters = Q(projectCard=int(project_id))
+
+        # Apply search filters based on the query parameters
+        if department:
+            filters &= Q(department__icontains=department)
+        if designation:
+            filters &= Q(designation__icontains=designation)
+        if location:
+            filters &= Q(location__icontains=location)
+        
+        # Retrieve matching records
+        search_results = ProjectCardUser.objects.filter(filters)
+        
+        # Apply pagination
+        paginator = CustomPagination()
+        paginated_results = paginator.paginate_queryset(search_results, request)
+        
+        # Serialize the paginated results
+        serializer = ProjectCardUserSerializer(paginated_results, many=True)
+        
+        # Return paginated response
+        return paginator.get_paginated_response(serializer.data)
+
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)})
