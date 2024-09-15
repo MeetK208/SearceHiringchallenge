@@ -73,7 +73,13 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
 ]
 
-CORS_ALLOWED_ORIGINS = [ "*", "127.0.0.1", "0.0.0.0" ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",   # Frontend running locally
+    "http://127.0.0.1:3000",   # Frontend with localhost IP
+    "http://0.0.0.0:3000",     # Dockerized app running on local network
+    "https://yourfrontenddomain.com",  # Deployed frontend
+    "https://searcehiringchallenge.onrender.com",  # Deployed backend
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
