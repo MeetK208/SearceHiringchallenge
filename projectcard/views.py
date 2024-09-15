@@ -10,15 +10,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils.decorators import decorator_from_middleware
 from register.middleware import AuthenticationMiddleware
 from django.db.models import Q
-
+from utils.authHelper import *
 logger = logging.getLogger(__name__)
-
-# Helper to get the user from cookies and check authentication
-def get_authenticated_user(request):
-    user_id = request.COOKIES.get('userId')
-    if not user_id:
-        return None
-    return user_id
 
 # Helper to get the project and verify ownership/collaborator status
 def get_project_and_authorize(user_id, project_id):
@@ -43,7 +36,7 @@ def get_project_and_authorize(user_id, project_id):
 @api_view(['GET'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def getAllProject(request):
-    user_id = get_authenticated_user(request)
+    user_id, email_id = getUserIdEmail(request)
 
     if not user_id:
         return Response({'status': 'error', 'message': 'User not authenticated'})
@@ -101,7 +94,7 @@ def getAllProject(request):
             'status': 'success',
             'message': 'Projects retrieved successfully',
             'userid': user_id,
-            'email': request.COOKIES.get('email'),
+            'email': email_id,
             'projects': project_data
         })
 
@@ -112,7 +105,7 @@ def getAllProject(request):
 @api_view(['POST'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def createProject(request):
-    user_id = get_authenticated_user(request)
+    user_id, email_id = getUserIdEmail(request)
     if not user_id:
         Response({'status': 'error', 'message': 'User not authenticated'})
 
@@ -169,7 +162,7 @@ def createProject(request):
 @api_view(['GET'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def getOneProjectCard(request):
-    user_id = get_authenticated_user(request)
+    user_id, email_id = getUserIdEmail(request)
     projectId = request.query_params.get('projectId')
 
     if not user_id:
@@ -198,7 +191,7 @@ def getOneProjectCard(request):
 @api_view(['PUT'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def editOneProjectCard(request):
-    user_id = get_authenticated_user(request)
+    user_id, email_id = getUserIdEmail(request)
     project_id = request.query_params.get('projectId')
 
     if not user_id:
@@ -239,7 +232,7 @@ def editOneProjectCard(request):
 @api_view(['DELETE'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def deleteOneProjectCard(request):
-    user_id = get_authenticated_user(request)
+    user_id, email_id = getUserIdEmail(request)
     projectId = request.query_params.get('projectId')
 
     if not user_id:
@@ -267,7 +260,7 @@ def deleteOneProjectCard(request):
 @decorator_from_middleware(AuthenticationMiddleware)
 def all_usersList(request):
     print("Herr")
-    user_id = get_authenticated_user(request)
+    user_id, email_id = getUserIdEmail(request)
     if not user_id:
         Response({'status': 'error', 'message': 'User not authenticated'})
 

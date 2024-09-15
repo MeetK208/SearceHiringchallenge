@@ -14,6 +14,7 @@ from django.db.models import Q
 from projectcard.models import *
 import pandas as pd
 import json
+from utils.authHelper import *
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,8 @@ def get_project_and_authorize(user_id, project_id):
 @api_view(['GET'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def getAllUserCard(request):
-    user_id = request.COOKIES.get('userId')  # Get user ID from cookies
+    
+    user_id, email_id = getUserIdEmail(request)  # Get user ID from cookies
     projectId = request.query_params.get('projectId')  # Get project ID from query params
 
     if not user_id:
@@ -129,7 +131,7 @@ def getAllUserCard(request):
             'status': 'success',
             'message': 'User cards retrieved successfully',
             'userId': user_id,
-            'email': request.COOKIES.get('email'),
+            'email': email_id,
             'projectId': projectId,
             'userCards': serializer.data,
             'DashboardMatrix': json.loads(DashboardMatrix),
@@ -145,7 +147,7 @@ def getAllUserCard(request):
 @api_view(['POST'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def CreateUserCard(request):
-    user_id = request.COOKIES.get('userId')  # Get user ID from cookies
+    user_id, email_id = getUserIdEmail(request)  # Get user ID from cookies
     projectId = request.query_params.get('projectId')  # Get project ID from query params
 
     if not user_id:
@@ -209,7 +211,7 @@ def CreateUserCard(request):
 @api_view(['PUT'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def updateOneUserCard(request):
-    user_id = request.COOKIES.get('userId')  # Get user ID from cookies
+    user_id, email_id = getUserIdEmail(request)  # Get user ID from cookies
     projectId = request.query_params.get('projectId')  # Get project ID from query params
     usercard_Id = request.query_params.get('cardId')  # Get project ID from query params
 
@@ -253,7 +255,7 @@ def updateOneUserCard(request):
 @api_view(['DELETE'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def deleteOneUserCard(request):
-    user_id = request.COOKIES.get('userId')  # Get user ID from cookies
+    user_id, email_id = getUserIdEmail(request)  # Get user ID from cookies
     usercard_Id = request.query_params.get('cardId')
     
     if not user_id:
@@ -284,7 +286,7 @@ def deleteOneUserCard(request):
 @api_view(['GET'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def updateBudget(request):
-    user_id = request.COOKIES.get('userId')  # Get user ID from cookies
+    user_id, email_id = getUserIdEmail(request)  # Get user ID from cookies
     
     if not user_id:
         Response({'status': 'error', 'message': 'User not authenticated'})
