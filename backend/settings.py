@@ -72,6 +72,9 @@ CORS_ALLOW_HEADERS = [
     'authorization',
     'x-csrftoken',
 ]
+
+CORS_ALLOWED_ORIGINS = [ "*", "127.0.0.1", "0.0.0.0" ]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
