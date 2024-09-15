@@ -101,7 +101,7 @@ def loginData(request):
     password = request.data.get('password')
     role = request.data.get('role')
 
-    if not email or not password or not role:
+    if not email or not password:
         return Response({'status': 400, 'error': 'All fields are required'})
 
     try:

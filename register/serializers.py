@@ -10,5 +10,5 @@ class UserSerializer(serializers.ModelSerializer):
             'email': {'required': True},
             'password': {'required': True},
             'userId': {'required': False},  # AutoField doesn't need to be provided manually
-            'role': {'required': True}  # Even though there's a default, you can still make it required
+            # 'role': {'required': True}  # Even though there's a default, you can still make it required
         }
