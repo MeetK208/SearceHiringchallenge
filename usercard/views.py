@@ -168,7 +168,7 @@ def CreateUserCard(request):
             logger.error(f"Serializer errors: {serializer.errors}")
             return Response({
                 'status': 'success',
-                , 'message': serializer.errors
+                'message': serializer.errors
             })
     
     except Project.DoesNotExist:
