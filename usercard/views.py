@@ -77,16 +77,16 @@ def getAllUserCard(request):
     projectId = request.query_params.get('projectId')  # Get project ID from query params
 
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
 
     if not projectId:
-        return Response({'status': 400, 'error': 'Project ID is required'})
+        return Response({'status': 'error', 'message': 'Project ID is required'})
 
     try:
         # Fetch all ProjectCardUser entries related to the given project ID
         project_users = ProjectCardUser.objects.filter(projectCard=int(projectId))
         if not project_users.exists():
-            return Response({'status': 404, 'error': 'No user cards found for this project'})
+            return Response({'status': 'error', 'message': 'No user cards found for this project'})
 
         # Serialize the data of ProjectCardUser
         serializer = ProjectCardUserSerializer(project_users, many=True)
@@ -102,8 +102,8 @@ def getAllUserCard(request):
         else:
             usedBudget = str(usedBudget/100) + " Cr"
         
-        return Response({
-            'status': 200,
+        return  Response({ 
+             'status': 'success',
             'message': 'User cards retrieved successfully',
             'userId': user_id,
             'email': request.COOKIES.get('email'),
@@ -116,7 +116,7 @@ def getAllUserCard(request):
 
     except Exception as e:
         logger.error(f"Error in getAllUserCard view: {e}")
-        return Response({'status': 500, 'error': 'An error occurred while retrieving user cards'})
+        return Response({'status': 'error', 'message': 'An error occurred while retrieving user cards'})
 
 
 @api_view(['POST'])
@@ -126,14 +126,14 @@ def CreateUserCard(request):
     projectId = request.query_params.get('projectId')  # Get project ID from query params
 
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
     
     if not projectId:
-        return Response({'status': 400, 'error': 'Project ID is required'})
+        return Response({'status': 'error', 'message': 'Project ID is required'})
 
     required_fields = ['designation', 'department', 'budget', 'location']
     if not all(field in request.data for field in required_fields):
-        return Response({'status': 400, 'error': 'Provide all required fields'})
+        return Response({'status': 'error', 'message': 'Provide all required fields'})
 
     try:
         project = Project.objects.get(projectId=int(projectId))
@@ -143,7 +143,7 @@ def CreateUserCard(request):
             ).exists()
 
             if not is_collaborator:
-                return Response({'status': 400, 'message': 'You are not authorized to add a card to this project'})
+                return Response({'status': 'error', 'message': 'You are not authorized to add a card to this project'})
         
         data = {
             'projectCard': projectId,
@@ -159,7 +159,7 @@ def CreateUserCard(request):
         if serializer.is_valid():
             project_card_user = serializer.save()
             return Response({
-                'status': 200,
+                'status': 'success',
                 'message': 'Project Card User created successfully',
                 'project_card_user': serializer.data,
                 "user_id": user_id
@@ -167,15 +167,15 @@ def CreateUserCard(request):
         else:
             logger.error(f"Serializer errors: {serializer.errors}")
             return Response({
-                'status': 400,
-                'errors': serializer.errors
+                'status': 'success',
+                , 'message': serializer.errors
             })
     
     except Project.DoesNotExist:
-        return Response({'status': 404, 'error': 'Project not found'})
+        Response({'status': 'error', 'message': 'Project not found'})
     except Exception as e:
         logger.error(f"Error in CreateUserCard view: {e}")
-        return Response({'status': 500, 'error': 'An error occurred while creating the user card'})
+        return Response({'status': 'error', 'message': 'An error occurred while creating the user card'})
   
 
 @api_view(['PUT'])
@@ -185,16 +185,16 @@ def updateOneUserCard(request):
     projectId = request.query_params.get('projectId')  # Get project ID from query params
 
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
     
     if not projectId:
-        return Response({'status': 400, 'error': 'Project ID is required'})
+        return Response({'status': 'error', 'message': 'Project ID is required'})
     
     try:
         project_card_user = ProjectCardUser.objects.filter(Q(user_id=user_id) & Q(projectCard=projectId)).first()
 
         if not project_card_user:
-            return Response({'status': 404, 'error': 'User card not found or you do not have permission to update'})
+            return Response({'status': 'error', 'message': 'User card not found or you do not have permission to update'})
 
         serializer = ProjectCardUserSerializer(project_card_user, data=request.data, partial=True)
 
@@ -202,19 +202,19 @@ def updateOneUserCard(request):
             updated_project_card_user = serializer.save()
             project_card_user_data = ProjectCardUserSerializer(updated_project_card_user).data
             return Response({
-                'status': 200,
+                'status': 'success',
                 'message': 'User card updated successfully',
                 'userCard': project_card_user_data
             })
 
         return Response({
-            'status': 400,
-            'errors': serializer.errors
+            'status': 'error',
+            'message': serializer.errors
         })
 
     except Exception as e:
         logger.error(f"Error in updateOneUserCard view: {e}")
-        return Response({'status': 500, 'error': 'An error occurred while updating the user card'})
+        return Response({'status': 'error', 'message': 'An error occurred while updating the user card'})
 
 
 @api_view(['DELETE'])
@@ -223,24 +223,24 @@ def deleteOneUserCard(request):
     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
     
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
 
     project_id = request.query_params.get('projectId')
     
     if not project_id:
-        return Response({'status': 400, 'error': 'Please provide a valid projectId'})
+        return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
 
     try:
         project_user_card = ProjectUserCard.objects.get(projectId=project_id, userId=user_id)
         project_user_card.delete()
-        return Response({'status': 200, 'message': 'User card deleted successfully'})
+        return Response({'status': 'success', 'message': 'User card deleted successfully'})
     
     except ProjectUserCard.DoesNotExist:
-        return Response({'status': 404, 'error': 'User card not found'})
+        return Response({'status': 'error', 'message': 'User card not found'})
 
     except Exception as e:
         logger.error(f"Error in deleteOneUserCard view: {e}")
-        return Response({'status': 500, 'error': 'An error occurred while deleting the user card'})
+        return Response({'status': 'error', 'message': 'An error occurred while deleting the user card'})
 
 
 @api_view(['GET'])
@@ -249,17 +249,17 @@ def updateBudget(request):
     user_id = request.COOKIES.get('userId')  # Get user ID from cookies
     
     if not user_id:
-        return Response({'status': 400, 'error': 'User not authenticated'})
+        Response({'status': 'error', 'message': 'User not authenticated'})
 
     project_id = request.query_params.get('projectId')
     
     if not project_id:
-        return Response({'status': 400, 'error': 'Please provide a valid projectId'})
+        return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
     
     try:
         updatedBudget = request.data.get('budget')
         if not updatedBudget:
-            return Response({'status': 400, 'error': 'Please provide a valid Total Budget'})
+            return Response({'status': 'error', 'message': 'Please provide a valid Total Budget'})
         
         # Convert project_id to integer
         project_id = int(project_id)
@@ -271,12 +271,12 @@ def updateBudget(request):
         project.budget = updatedBudget
         project.save()
         
-        return Response({'status': 200, 'message': 'Budget updated successfully'})
+        return Response({'status': 'success', 'message': 'Budget updated successfully'})
     
     except Project.DoesNotExist:
-        return Response({'status': 404, 'error': 'Project not found'})
+        Response({'status': 'error', 'message': 'Project not found'})
     except ValueError:
-        return Response({'status': 400, 'error': 'Invalid projectId or budget value'})
+        return Response({'status': 'error', 'message': 'Invalid projectId or budget value'})
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
-        return Response({'status': 500, 'error': 'An error occurred while updating the budget'})
+        return Response({'status': 'error', 'message': 'An error occurred while updating the budget'})
