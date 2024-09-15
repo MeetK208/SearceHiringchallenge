@@ -48,7 +48,7 @@ def postData(request):
         
         return  Response({ 
              'status': 'success',
-            'message': 'Data processed successfully',
+            'message': 'User Registered successfully',
             'encrypted_password': enc_password,
             'user': user_data,  # Serialized user data
         })
@@ -58,41 +58,6 @@ def postData(request):
         'status': 'error',
         'message': serializer.errors
     })
-
-
-
-@api_view(['POST'])
-def postData(request):
-    # Initialize the serializer with request data
-    serializer = UserSerializer(data=request.data)
-    
-    if not request.data.get('email') or not request.data.get('password') or not request.data.get('role'):
-        return Response({'status': 'error', 'message': 'All Feilds are required'})
-
-    # Validate the serializer data
-    if serializer.is_valid():
-        print(serializer.validated_data)
-        enc_password = pbkdf2_sha256.encrypt(serializer.validated_data['password'], rounds=12000, salt_size=32)
-
-        # Save the user with the encrypted password
-        user = serializer.save(password=enc_password)
-        
-        # Serialize the user object after saving
-        user_data = UserSerializer(user).data
-        
-        return  Response({ 
-             'status': 'success',
-            'message': 'Data processed successfully',
-            'encrypted_password': enc_password,
-            'user': user_data,  # Serialized user data
-        })
-    
-    # Return errors if validation fails
-    return Response({
-        'status': 'error',
-        'message': serializer.errors
-    })
-
 
 @api_view(['POST'])
 def loginData(request):
