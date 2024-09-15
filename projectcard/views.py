@@ -107,7 +107,7 @@ def createProject(request):
     if not user_id:
         return Response({'status': 400, 'error': 'User not authenticated'})
 
-    user_ids = request.data.get('userIds')  # This is the array of userIds
+    coplanners = request.data.get('coplanners')  # This is the array of userIds
 
     required_fields = ['projectName', 'budget', 'totalPosition']
     if not all(request.data.get(field) for field in required_fields):
@@ -128,11 +128,13 @@ def createProject(request):
 
         project_data = ProjectSerializer(new_project).data
         
-        if user_ids:
-            for user_id in user_ids:
-                ProjectUser.objects.create(projectId=new_project, userId=user_id)
+        print(coplanners)
+        if coplanners:
+            for useridAdd in coplanners:
+                useradd = User.objects.get(pk=useridAdd)
+                ProjectUser.objects.create(projectId=new_project, userId=useradd)
 
-        # new_project_user = ProjectUser.objects.create(userId=user, projectId=new_project)
+        ProjectUser.objects.create(userId=user, projectId=new_project, is_owner = True)
 
         # project_user_data = ProjectUserSerializer(new_project_user).data
 

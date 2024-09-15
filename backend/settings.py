@@ -15,7 +15,7 @@ import dj_database_url
 from dotenv import load_dotenv
 import os
 print(os.getcwd())  # Check the current working directory
-DEBUG = True
+# DEBUG = True
 
 load_dotenv(".env")
 print("DB Url is",os.environ.get('DATABASE_URL'))
@@ -30,7 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-e)21&&p2&ck1_k)r(8mu^8+-%3y%yw)(csmn5(p1j*)yzh_6#)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
 
 ALLOWED_HOSTS = ["searcehiringchallenge.onrender.com", "", "127.0.0.1", "0.0.0.0"]
 
@@ -44,15 +44,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'rest_framework',
     'register',
     'projectcard',
     'usercard',
 ]
+CROS_ORIGIN_ALLOW_ALL = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

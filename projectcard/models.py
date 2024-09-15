@@ -18,6 +18,6 @@ class Project(models.Model):
 class ProjectUser(models.Model):
     userId = models.ForeignKey(User, on_delete=models.CASCADE)  # ForeignKey to User model
     projectId = models.ForeignKey(Project, on_delete=models.CASCADE)  # ForeignKey to Project model
-    
+    is_owner = models.BooleanField(default=False)
     def __str__(self):
-        return f"User {self.userId} - Project {self.projectId}"
+        return f"User {self.userId} - Project {self.projectId} - is Owner {self.is_owner}"
