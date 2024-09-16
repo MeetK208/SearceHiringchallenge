@@ -93,6 +93,7 @@ def loginData(request):
             secure = False
         response.set_cookie('userId', user.userId, expires=expires_at, httponly=True, samesite='None', secure=secure)
         response.set_cookie('email', user.email, expires=expires_at, httponly=True, samesite='None', secure=secure)
+        response.set_cookie('csrfToken', csrf_token, expires=expires_at, httponly=True, samesite='None', secure=secure)
         return response
 
     else:
