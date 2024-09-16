@@ -159,7 +159,7 @@ else:
     DATABASES = {
         "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
     }
-    MIDDLEWARE.append('django.middleware.csrf.CsrfViewMiddleware')
+    # MIDDLEWARE.append('django.middleware.csrf.CsrfViewMiddleware')
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

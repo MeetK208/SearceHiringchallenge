@@ -11,6 +11,8 @@ from django.utils.decorators import decorator_from_middleware
 from register.middleware import AuthenticationMiddleware
 import datetime
 from utils.authHelper import *
+from django.middleware.csrf import get_token
+
 logger = logging.getLogger(__name__)
 
 # Create your views here.
@@ -87,10 +89,10 @@ def loginData(request):
         # Set cookies for future requests
         print(user.userId, user.email)
         expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-        if os.environ.get("DEBUG"):
-            secure = True
-        else:
-            secure = False
+        csrf_token = get_token(request)
+        secure = not os.environ.get("DEBUG")  # Set secure based on DEBUG environment variable
+        csrf_token = get_token(request)
+
         response.set_cookie('userId', user.userId, expires=expires_at, httponly=True, samesite='None', secure=secure)
         response.set_cookie('email', user.email, expires=expires_at, httponly=True, samesite='None', secure=secure)
         response.set_cookie('csrfToken', csrf_token, expires=expires_at, httponly=True, samesite='None', secure=secure)
