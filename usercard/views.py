@@ -16,6 +16,7 @@ import pandas as pd
 import json
 from utils.authHelper import *
 from rest_framework.pagination import PageNumberPagination
+from math import ceil
 
 logger = logging.getLogger(__name__)
 
@@ -129,13 +130,17 @@ def getAllUserCard(request):
             usedBudget = f"{usedBudget} lakhs"
         else:
             usedBudget = f"{usedBudget / 100} Cr"
+        
+        # Apply pagination
         paginator = CustomPagination()
         paginated_users = paginator.paginate_queryset(project_users, request)
 
         # Serialize the paginated data of ProjectCardUser
         serializer = ProjectCardUserSerializer(paginated_users, many=True)
 
-        # Fetch total budget of the project
+        # Calculate the total number of pages based on the user-specified page size
+        page_size = int(request.query_params.get('page_size', paginator.page_size))
+        total_pages = ceil(total_records / page_size)
 
         # Return the successful paginated response with user card data and budget details
         return paginator.get_paginated_response({ 
@@ -147,7 +152,9 @@ def getAllUserCard(request):
             'userCards': serializer.data,
             'DashboardMatrix': json.loads(DashboardMatrix),
             'totalBudget': totalBudget,
-            'usedBudget': usedBudget
+            'usedBudget': usedBudget,
+            'total_pages': total_pages,
+            'total_records': total_records,
         })
 
     except Exception as e:
@@ -336,8 +343,10 @@ def updateBudget(request):
         return Response({'status': 'error', 'message': 'An error occurred while updating the budget'})
 
 
+
 @api_view(['GET'])
-def updateBudget(request):
+@decorator_from_middleware(AuthenticationMiddleware)
+def searchUserCard(request):
     user_id, email_id = getUserIdEmail(request)  # Get user ID from cookies
 
     if not user_id:
@@ -371,15 +380,28 @@ def updateBudget(request):
         # Retrieve matching records
         search_results = ProjectCardUser.objects.filter(filters)
         
+        # Get the user-specified page size or use a default value
+        page_size = int(request.query_params.get('page_size', 10))
+        total_records = search_results.count()
+
+        # Calculate the total number of pages
+        total_pages = ceil(total_records / page_size)
+
         # Apply pagination
         paginator = CustomPagination()
         paginated_results = paginator.paginate_queryset(search_results, request)
-        
+
         # Serialize the paginated results
         serializer = ProjectCardUserSerializer(paginated_results, many=True)
-        
-        # Return paginated response
-        return paginator.get_paginated_response(serializer.data)
+
+        # Return paginated response with total number of pages
+        return Response({
+            'status': 'success',
+            'results': serializer.data,
+            'total_pages': total_pages,
+            'current_page': paginator.page.number,
+            'total_records': total_records
+        })
 
     except Exception as e:
         return Response({'status': 'error', 'message': str(e)})
