@@ -112,7 +112,7 @@ def getAllUserCard(request):
         # Fetch all ProjectCardUser entries related to the given project ID
         project_users = ProjectCardUser.objects.filter(projectCard=int(projectId)).order_by('carduserId')
         if not project_users.exists():
-            return Response({'status': 'error', 'message': 'No user cards found for this project'})
+            return Response({'status': 'success', 'message': 'No user found for this project'})
         
         total_records = project_users.count()
 
