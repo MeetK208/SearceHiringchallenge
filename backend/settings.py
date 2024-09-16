@@ -77,6 +77,8 @@ CORS_ALLOW_HEADERS = [
     'content-type',
     'authorization',
     'x-csrftoken',
+    'x-requested-with',  # Add this
+
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -94,8 +96,6 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -159,6 +159,7 @@ else:
     DATABASES = {
         "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
     }
+    MIDDLEWARE.append('django.middleware.csrf.CsrfViewMiddleware')
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
