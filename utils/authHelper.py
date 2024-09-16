@@ -1,13 +1,18 @@
 import os
 def getUserIdEmail(request):
+    print('request',request.headers)
     if (os.environ.get("DEBUG") == "True" ):
         print("Local Server Running")
         email = request.COOKIES.get('email')
         user_id = request.COOKIES.get('userId')
+        print(email, user_id)
         return user_id, email
     else:
         print("Deployment Server Running")
         cookies_header = request.headers.get('Cookies')
+        email = request.COOKIES.get('email')
+        user_id = request.COOKIES.get('userId')
+        return user_id, email
     if cookies_header:
         # Initialize a dictionary to store parsed cookies
         cookies = {}

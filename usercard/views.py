@@ -113,8 +113,6 @@ def getAllUserCard(request):
         project_users = ProjectCardUser.objects.filter(projectCard=int(projectId)).order_by('carduserId')
         if not project_users.exists():
             return Response({'status': 'error', 'message': 'No user cards found for this project'})
-        
-        total_records = project_users.count()
 
         # Serialize the data of ProjectCardUser
         serializer = ProjectCardUserSerializer(project_users, many=True)

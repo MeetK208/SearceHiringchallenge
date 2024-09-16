@@ -40,7 +40,7 @@ def getAllProject(request):
 
     if not user_id:
         return Response({'status': 'error', 'message': 'User not authenticated'})
-
+    print("Hear Collabrotaor")
     try:
         # Fetch projects owned by the user
         user_projects = Project.objects.filter(user_id=user_id)
@@ -61,20 +61,23 @@ def getAllProject(request):
 
             # Fetch project owner details
             owner = User.objects.filter(userId=project.user.userId).values('userId', 'username', 'email').first()
+            print(project)
+            # Fetch collaborators for the project, excluding the current user
+            print(project.projectId)
+            collaborators = ProjectUser.objects.filter(projectId=project.projectId) #.exclude(userId=user_id)
 
-            # Fetch collaborators for the project, including their `is_owner` status
-            collaborators = ProjectUser.objects.filter(projectId=project.projectId).exclude(userId=user_id)
-
+            print(collaborators)
             collaborator_details = []
             for collaborator in collaborators:
-                # Fetch user details for each collaborator
-                user = User.objects.filter(userId=collaborator.userId.userId).values('userId', 'username', 'email').first()
-
-                if user:
+                # Ensure you're correctly accessing the related `User` model fields
+                # Assuming `ProjectUser.userId` is a ForeignKey to the `User` model
+                user = collaborator.userId  # Directly accessing the related user
+                
+                if user:  # Ensure the user exists
                     collaborator_details.append({
-                        'userId': user['userId'],
-                        'name': user['username'],
-                        'email': user['email'],
+                        'userId': user.userId,
+                        'name': user.username,
+                        'email': user.email,
                         'is_owner': collaborator.is_owner  # Add the is_owner field here
                     })
 
@@ -90,7 +93,7 @@ def getAllProject(request):
 
             project_data.append(serialized_project)
 
-        return Response({ 
+        return Response({
             'status': 'success',
             'message': 'Projects retrieved successfully',
             'userid': user_id,
