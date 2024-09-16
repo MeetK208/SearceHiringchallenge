@@ -147,6 +147,18 @@ else:
         "http://127.0.0.1:8000",
         "https://searcehiringchallenge.onrender.com",
     ]
+    
+if os.environ.get("DEBUG") == "True":
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
