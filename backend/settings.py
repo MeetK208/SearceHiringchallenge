@@ -52,13 +52,18 @@ INSTALLED_APPS = [
     'usercard',
 ]
 
-SESSION_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = True
+if os.environ.get("DEBUG") == "True":
+    SESSION_COOKIE_SAMESITE = 'Lax'  # No cross-origin cookie sharing for local
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
-CORS_ALLOW_ALL_ORIGINS = True 
-CORS_ALLOW_CREDENTIALS = True
+else:
+    SESSION_COOKIE_SAMESITE = 'None'  # Allow cross-origin cookie sharing for deployment
+    CSRF_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True  # Secure cookie for HTTPS
+    CSRF_COOKIE_SECURE = True  # Secure CSRF cookie for HTTPS
+
 CORS_ALLOW_METHODS = [
     "GET",
     "POST",
@@ -122,19 +127,26 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 print(os.environ.get("DEBUG"))
-if (os.environ.get("DEBUG") == "True"):
-    print("Deployment Server Running.......")
-    DATABASES = {
-        "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
-    }
-else:
+if os.environ.get("DEBUG") == "True":
     print("Local Server Running.......")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    DEBUG = True
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins for local development
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:4200", 
+        "http://127.0.0.1:8000", 
+        "https://searcehiringchallenge.onrender.com"
+    ]
+else:
+    print("Deployment Server Running.......")
+    DEBUG = False
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOW_ALL_ORIGINS = False
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:4200",
+        "http://127.0.0.1:8000",
+        "https://searcehiringchallenge.onrender.com",
+    ]
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
