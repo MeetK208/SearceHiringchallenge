@@ -316,7 +316,7 @@ def deleteOneUserCard(request):
         return Response({'status': 'error', 'message': 'An error occurred while deleting the user card'})
 
 
-@api_view(['GET'])
+@api_view(['PUT'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def updateBudget(request):
     user_id, email_id = getUserIdEmail(request)  # Get user ID from cookies
@@ -330,7 +330,7 @@ def updateBudget(request):
         return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
     
     try:
-        project, authorized = get_project_and_authorize(user_id, projectId)
+        project, authorized = get_project_and_authorize(user_id, project_id)
         if not authorized:
             return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
 
@@ -360,6 +360,8 @@ def updateBudget(request):
 
 
 
+from math import ceil
+
 @api_view(['GET'])
 @decorator_from_middleware(AuthenticationMiddleware)
 def searchUserCard(request):
@@ -372,7 +374,7 @@ def searchUserCard(request):
     
     if not project_id:
         return Response({'status': 'error', 'message': 'Please provide a valid projectId'})
-    
+
     try:
         project, authorized = get_project_and_authorize(user_id, project_id)
         if not authorized:
@@ -392,10 +394,31 @@ def searchUserCard(request):
             filters &= Q(designation__icontains=designation)
         if location:
             filters &= Q(location__icontains=location)
-        
+
         # Retrieve matching records
-        search_results = ProjectCardUser.objects.filter(filters)
+        search_results = ProjectCardUser.objects.filter(filters).order_by('carduserId')
         
+        # If no records are found, return the default structure with empty or None values
+        if not search_results.exists():
+            return Response({
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": {
+                    'status': 'success',
+                    'message': 'User cards Not Found',
+                    'userId': user_id,
+                    'email': email_id,
+                    'projectId': project_id,
+                    'userCards': [],
+                    'DashboardMatrix': [],
+                    'totalBudget': "0",
+                    'usedBudget': "0.0",
+                    'total_pages': 0,
+                    'total_records': 0
+                }
+            })
+
         # Get the user-specified page size or use a default value
         page_size = int(request.query_params.get('page_size', 10))
         total_records = search_results.count()
@@ -412,11 +435,22 @@ def searchUserCard(request):
 
         # Return paginated response with total number of pages
         return Response({
-            'status': 'success',
-            'results': serializer.data,
-            'total_pages': total_pages,
-            'current_page': paginator.page.number,
-            'total_records': total_records
+            "count": total_records,
+            "next": paginator.get_next_link(),
+            "previous": paginator.get_previous_link(),
+            "results": {
+                'status': 'success',
+                'message': 'User cards retrieved successfully',
+                'userId': user_id,
+                'email': email_id,
+                'projectId': project_id,
+                'userCards': serializer.data,
+                'DashboardMatrix': [],  # Add logic here to calculate if applicable
+                'totalBudget': "0",  # Example total budget; adjust as needed
+                'usedBudget': "0",  # Example used budget; adjust as needed
+                'total_pages': total_pages,
+                'total_records': total_records
+            }
         })
 
     except Exception as e:

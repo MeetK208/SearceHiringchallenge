@@ -6,7 +6,7 @@ urlpatterns = [
     path('get-all', views.getAllUserCard, name='getAllUserCard'),
     path('update-user', views.updateOneUserCard,name='updateOneUserCard'),
     path('delete-user', views.deleteOneUserCard,name='deleteOneUserCard'),
-    # path('kpi-user', views.KpiGenerate,name='KpiGenerate'),
-    path('update-budgate', views.updateBudget,name='updateBudgate'),
+    path('update-budgate', views.updateBudget,name='searchUser'),
+    path('search-user', views.searchUserCard,name='updateBudgate'),
     path('create-user', views.CreateUserCard,name='CreateUserCard'),
 ]
