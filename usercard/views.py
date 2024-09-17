@@ -109,28 +109,31 @@ def getAllUserCard(request):
         if not authorized:
             return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
          
-         # Fetch all ProjectCardUser entries related to the given project ID
+        # Fetch all ProjectCardUser entries related to the given project ID
         project_users = ProjectCardUser.objects.filter(projectCard=int(projectId)).order_by('carduserId')
         ProjectData = Project.objects.filter(projectId=int(projectId)) 
+        project_name = ProjectData.name
         totalBudget = "0 cr"
         if ProjectData.exists(): 
             totalBudget = ProjectData.first().budget 
         rupees, currency = totalBudget.split()
         if not project_users.exists(): 
+            usedBudget = str(0) + currency
             return Response({ 
                 "count": 0,
                 "next": None,
                 "previous": None,
                 "results":{
-                'status': 'success' ,
-                'message': 'User cards Not Found' ,
-                'userId': user_id ,
-                'email': email_id , 
-                'projectId': projectId ,
+                'status': 'success',
+                'message': 'User cards Not Found',
+                'userId': user_id,
+                'email': email_id, 
+                'projectId': projectId,
+                'projectName': project_name,
                 'userCards': [] ,
                 'DashboardMatrix': [] ,
-                'totalBudget' : totalBudget ,
-                'usedBudget': 0.0 ,
+                'totalBudget' : totalBudget,
+                'usedBudget': usedBudget,
                 'total_pages': 0 ,
                 'total_records': 0 ,
                 }
@@ -157,7 +160,8 @@ def getAllUserCard(request):
         # Calculate the total number of pages based on the user-specified page size
         page_size = int(request.query_params.get('page_size', paginator.page_size))
         total_pages = ceil(total_records / page_size)
-
+        
+        usedBudget = str(usedBudget) + currency
         # Return the successful paginated response with user card data and budget details
         return paginator.get_paginated_response({ 
             'status': 'success',
@@ -165,6 +169,7 @@ def getAllUserCard(request):
             'userId': user_id,
             'email': email_id,
             'projectId': projectId,
+            'projectName': project_name,
             'userCards': serializer.data,
             'DashboardMatrix': json.loads(DashboardMatrix),
             'totalBudget': totalBudget,
