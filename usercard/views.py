@@ -111,17 +111,30 @@ def getAllUserCard(request):
         
         # Fetch all ProjectCardUser entries related to the given project ID
         project_users = ProjectCardUser.objects.filter(projectCard=int(projectId)).order_by('carduserId')
+        ProjectData = Project.objects.filter(projectId=int(projectId))
+        totalBudget = 1
+        if ProjectData.exists():
+            totalBudget = ProjectData.first().budget
         if not project_users.exists():
-            return Response({'status': 'success', 'message': 'No user found for this project'})
+            return Response({
+                'status': 'success',
+                'message': 'User cards Not Found',
+                'userId': user_id,
+                'email': email_id,
+                'projectId': projectId,
+                'userCards': {},
+                'DashboardMatrix': {},
+                'totalBudget' : totalBudget,
+                'usedBudget': 0,
+                'total_pages': 0,
+                'total_records': 0,
+            })
         
         total_records = project_users.count()
 
         # Serialize the data of ProjectCardUser
         serializer = ProjectCardUserSerializer(project_users, many=True)
-        ProjectData = Project.objects.filter(projectId=int(projectId))
-        totalBudget = 1
-        if ProjectData.exists():
-            totalBudget = ProjectData.first().budget
+       
 
         # Split the budget value and currency
         rupees, currency = totalBudget.split()
