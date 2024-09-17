@@ -112,11 +112,16 @@ def getAllUserCard(request):
          # Fetch all ProjectCardUser entries related to the given project ID
         project_users = ProjectCardUser.objects.filter(projectCard=int(projectId)).order_by('carduserId')
         ProjectData = Project.objects.filter(projectId=int(projectId)) 
-        totalBudget = 1 
+        totalBudget = "0 cr"
         if ProjectData.exists(): 
             totalBudget = ProjectData.first().budget 
+        rupees, currency = totalBudget.split()
         if not project_users.exists(): 
             return Response({ 
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results":{
                 'status': 'success' ,
                 'message': 'User cards Not Found' ,
                 'userId': user_id ,
@@ -125,9 +130,10 @@ def getAllUserCard(request):
                 'userCards': {} ,
                 'DashboardMatrix': {} ,
                 'totalBudget' : totalBudget ,
-                'usedBudget': 0 ,
+                'usedBudget': 0.0 ,
                 'total_pages': 0 ,
                 'total_records': 0 ,
+                }
             })
         
         total_records = project_users.count()
@@ -137,14 +143,9 @@ def getAllUserCard(request):
        
 
         # Split the budget value and currency
-        rupees, currency = totalBudget.split()
         DashboardMatrix, usedBudget = KPILogic(serializer.data, totalBudget)
 
         # Adjust budget output based on currency type
-        if currency.lower() == "lakhs":
-            usedBudget = f"{usedBudget} lakhs"
-        else:
-            usedBudget = f"{usedBudget / 100} Cr"
         
         # Apply pagination
         paginator = CustomPagination()
