@@ -120,7 +120,7 @@ def getAllUserCard(request):
                 'status': 'success',
                 'message': 'User cards Not Found',
                 'userId': user_id,
-                'email': email_id,
+                'email': email_id, 
                 'projectId': projectId,
                 'userCards': {},
                 'DashboardMatrix': {},
