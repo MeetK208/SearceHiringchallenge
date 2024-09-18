@@ -118,7 +118,7 @@ def getAllUserCard(request):
             totalBudget = ProjectData.first().budget 
         rupees, currency = totalBudget.split()
         if not project_users.exists(): 
-            usedBudget = str(0) + currency
+            usedBudget = str(0) + " " + currency
             return Response({ 
                 "count": 0,
                 "next": None,
