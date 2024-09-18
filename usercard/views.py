@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 def extract_budget_info(budget):
     try:
         amount, currency = budget.split()
-        amount = int(amount)
+        amount = float(amount)
         return amount, currency
     except Exception as e:
         logger.error(f"Error extracting budget info: {e}")
@@ -33,7 +33,7 @@ def KPILogic(data, totalBudget):
     try:
         # Split totalBudget to extract the numeric value and the currency type
         totalBudget, currency_type = totalBudget.split()
-        totalBudget = int(totalBudget)
+        totalBudget = float(totalBudget)
 
         # Create DataFrame
         df = pd.DataFrame(data)
