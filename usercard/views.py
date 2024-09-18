@@ -22,12 +22,24 @@ logger = logging.getLogger(__name__)
 
 def extract_budget_info(budget):
     try:
-        amount, currency = budget.split()
+        # Split by space to get amount and currency
+        parts = budget.strip().split()
+        
+        # Expect exactly two parts: amount and currency
+        if len(parts) != 2:
+            raise ValueError(f"Invalid budget format: {budget}")
+        
+        amount, currency = parts
+        # Convert the amount to a float
         amount = float(amount)
+        
         return amount, currency
-    except Exception as e:
+    except ValueError as e:
         logger.error(f"Error extracting budget info: {e}")
-        return 0, 'Unknown'
+        return 0.0, 'Unknown'
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return 0.0, 'Unknown'
 
 def KPILogic(data, totalBudget):
     try:
