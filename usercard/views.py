@@ -111,8 +111,8 @@ def getAllUserCard(request):
          
         # Fetch all ProjectCardUser entries related to the given project ID
         project_users = ProjectCardUser.objects.filter(projectCard=int(projectId)).order_by('carduserId')
-        ProjectData = Project.objects.filter(projectId=int(projectId)) 
-        project_name = ProjectData.name
+        ProjectData = Project.objects.filter(projectId=int(projectId))
+        project_name = ProjectData.first().projectName
         totalBudget = "0 cr"
         if ProjectData.exists(): 
             totalBudget = ProjectData.first().budget 
@@ -123,19 +123,19 @@ def getAllUserCard(request):
                 "count": 0,
                 "next": None,
                 "previous": None,
-                "results":{
-                'status': 'success',
-                'message': 'User cards Not Found',
-                'userId': user_id,
-                'email': email_id, 
-                'projectId': projectId,
-                'projectName': project_name,
-                'userCards': [] ,
-                'DashboardMatrix': [] ,
-                'totalBudget' : totalBudget,
-                'usedBudget': usedBudget,
-                'total_pages': 0 ,
-                'total_records': 0 ,
+                "results": {
+                    'status': 'success',
+                    'message': 'User cards Not Found',
+                    'userId': user_id,
+                    'email': email_id, 
+                    'projectId': projectId,
+                    'projectName': project_name,
+                    'userCards': [],
+                    'DashboardMatrix': [],
+                    'totalBudget': totalBudget,
+                    'usedBudget': usedBudget,
+                    'total_pages': 0,
+                    'total_records': 0,
                 }
             })
         
@@ -143,25 +143,43 @@ def getAllUserCard(request):
 
         # Serialize the data of ProjectCardUser
         serializer = ProjectCardUserSerializer(project_users, many=True)
-       
+        serialized_data = serializer.data
+
+        # Fetch username for last_edited_by_userId
+        for card in serialized_data:
+            last_editor_id = card.get('last_edited_by_userId')
+            if last_editor_id:
+                # Get the user who last edited the project card
+                user = User.objects.filter(userId=last_editor_id).first()
+                if user:
+                    card['last_edited_by_username'] = user.username
+                else:
+                    card['last_edited_by_username'] = None
 
         # Split the budget value and currency
-        DashboardMatrix, usedBudget = KPILogic(serializer.data, totalBudget)
+        DashboardMatrix, usedBudget = KPILogic(serialized_data, totalBudget)
 
-        # Adjust budget output based on currency type
-        
         # Apply pagination
         paginator = CustomPagination()
         paginated_users = paginator.paginate_queryset(project_users, request)
 
         # Serialize the paginated data of ProjectCardUser
-        serializer = ProjectCardUserSerializer(paginated_users, many=True)
+        paginated_serializer = ProjectCardUserSerializer(paginated_users, many=True)
+        paginated_data = paginated_serializer.data
+
+        # Fetch username for paginated data's last_edited_by_userId
+        for card in paginated_data:
+            last_editor_id = card.get('last_edited_by_userId')
+            if last_editor_id:
+                user = User.objects.filter(userId=last_editor_id).first()
+                card['last_edited_by_username'] = user.username if user else None
 
         # Calculate the total number of pages based on the user-specified page size
         page_size = int(request.query_params.get('page_size', paginator.page_size))
         total_pages = ceil(total_records / page_size)
         
         usedBudget = str(usedBudget) + currency
+
         # Return the successful paginated response with user card data and budget details
         return paginator.get_paginated_response({ 
             'status': 'success',
@@ -170,7 +188,7 @@ def getAllUserCard(request):
             'email': email_id,
             'projectId': projectId,
             'projectName': project_name,
-            'userCards': serializer.data,
+            'userCards': paginated_data,
             'DashboardMatrix': json.loads(DashboardMatrix),
             'totalBudget': totalBudget,
             'usedBudget': usedBudget,
@@ -438,6 +456,20 @@ def searchUserCard(request):
         # Serialize the paginated results
         serializer = ProjectCardUserSerializer(paginated_results, many=True)
 
+        # Add logic to retrieve `last_edited_by_username` from `last_edited_by_userId`
+        user_card_data = serializer.data
+        for card in user_card_data:
+            last_edited_by_user_id = card.get('last_edited_by_userId')
+            if last_edited_by_user_id:
+                try:
+                    # Retrieve the username for the last edited user
+                    user = User.objects.get(userId=last_edited_by_user_id)
+                    card['last_edited_by_username'] = user.username
+                except User.DoesNotExist:
+                    card['last_edited_by_username'] = None  # Handle case where user does not exist
+            else:
+                card['last_edited_by_username'] = None  # In case the field is empty
+
         # Return paginated response with total number of pages
         return Response({
             "count": total_records,
@@ -449,7 +481,7 @@ def searchUserCard(request):
                 'userId': user_id,
                 'email': email_id,
                 'projectId': project_id,
-                'userCards': serializer.data,
+                'userCards': user_card_data,
                 'DashboardMatrix': [],  # Add logic here to calculate if applicable
                 'totalBudget': "0",  # Example total budget; adjust as needed
                 'usedBudget': "0",  # Example used budget; adjust as needed
