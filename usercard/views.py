@@ -331,11 +331,11 @@ def CreateUserCard(request):
             
             if (projectBudget < usedBudget+rupees ):
                 return Response({
-                    'status': status.HTTP_400_BAD_REQUEST,
+                    'status': "error",
                     'message': 'Required Budget is Not Available!! Please check Used Budget',
                     'project_card_user': {},
                     "user_id": user_id
-                })
+                }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = ProjectCardUserSerializer(data=data)
 
@@ -401,11 +401,11 @@ def updateOneUserCard(request):
         print(projectBudget , usedBudget, rupees)
         if (projectBudget < usedBudget+rupees ):
             return Response({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'message': 'Required Budget is Not Available!! Please check Used Budget',
-                'project_card_user': {},
-                "user_id": user_id
-            })
+                    'status': "error",
+                    'message': 'Required Budget is Not Available!! Please check Used Budget',
+                    'project_card_user': {},
+                    "user_id": user_id
+                }, status=status.HTTP_400_BAD_REQUEST)
         
         if serializer.is_valid():
             updated_project_card_user = serializer.save()
@@ -496,11 +496,12 @@ def updateBudget(request):
         # Fetch the project
         if (rupees < usedBudget): 
             return Response({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'message': 'Required Budget is less then utilized Budget!! Please check Used Budget',
+                'status': "error",
+                'message': 'Required Budget is Not Available!! Please check Used Budget',
                 'project_card_user': {},
                 "user_id": user_id
-            })
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
         project = Project.objects.get(projectId=project_id)        
         
         # Update the budget
