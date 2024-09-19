@@ -17,8 +17,34 @@ import json
 from utils.authHelper import *
 from rest_framework.pagination import PageNumberPagination
 from math import ceil
+from django.db.models import Sum
 
 logger = logging.getLogger(__name__)
+
+def extract_numeric_value(budget_str):
+    # Remove any commas in the budget string
+    budget_str = budget_str.replace(",", "").strip()
+    
+    # Convert "Cr" to INR (1 Cr = 10,000,000)
+    if "Cr" in budget_str:
+        numeric_value = float(budget_str.replace(" Cr", "").strip()) * 10000000
+    # Convert "Lakh" to INR (1 Lakh = 100,000)
+    elif "L" in budget_str:
+        numeric_value = float(budget_str.replace(" L", "").strip()) * 100000
+    else:
+        numeric_value = float(budget_str)  # If it's a plain number without a unit
+    return numeric_value
+
+
+def get_used_budget(projectId):
+    used_budget = ProjectCardUser.objects.filter(projectCard=int(projectId))
+    # Convert the budgets from "Cr" or "Lakh" to actual numeric values and sum them
+    total_budget = sum([extract_numeric_value(budget.budget) for budget in used_budget])
+    print("Total Budget (in INR):", total_budget)
+    
+    return total_budget
+
+
 
 def extract_budget_info(budget):
     try:
@@ -41,11 +67,24 @@ def extract_budget_info(budget):
         logger.error(f"Unexpected error: {e}")
         return 0.0, 'Unknown'
 
+
+
+def extract_budget_info(budget):
+    # Assuming budget is in the format 'X Cr' or 'Y Lakh'
+    budget, currency_type = budget.split()
+    return float(budget), currency_type
+
 def KPILogic(data, totalBudget):
     try:
         # Split totalBudget to extract the numeric value and the currency type
         totalBudget, currency_type = totalBudget.split()
         totalBudget = float(totalBudget)
+
+        # Convert totalBudget based on the currency type
+        if currency_type == 'Cr':
+            totalBudget *= 10000000  # Convert Cr to rupees
+        else:
+            totalBudget *= 100000  # Convert Lakh to rupees
 
         # Create DataFrame
         df = pd.DataFrame(data)
@@ -54,24 +93,50 @@ def KPILogic(data, totalBudget):
         if 'budget' not in df.columns:
             raise KeyError("'budget' column is missing in the data")
 
-        # Extract budget information from each entry
+        # Extract numeric budget and currency type from the budget column
         df[['rupees', 'currency_type']] = df['budget'].apply(lambda x: pd.Series(extract_budget_info(x)))
 
-        # Ensure rupees are numeric
+        # Ensure rupees are numeric and handle any errors
         df['rupees'] = pd.to_numeric(df['rupees'], errors='coerce').fillna(0)
 
-        # Convert 'Cr' to actual amount in rupees
-        df['rupeese'] = df.apply(lambda row: row['rupees'] * 100 if row['currency_type'] == 'Cr' else row['rupees'], axis=1)
+        # Convert 'Cr' and 'Lakh' to actual amounts in rupees
+        df['rupees_converted'] = df.apply(
+            lambda row: row['rupees'] * 10000000 if row['currency_type'] == 'Cr' else row['rupees'] * 100000,
+            axis=1
+        )
 
-        # Group by department and sum
-        grouped_df = df.groupby('department')['rupeese'].sum().reset_index()
+        # Group by department and sum the converted rupees
+        grouped_df = df.groupby('department')['rupees_converted'].sum().reset_index()
 
-        # Calculate percentage of the budget used by department
-        grouped_df['percentage_used'] = round((grouped_df['rupeese'] / (totalBudget * 100)) * 100)
+        # Convert the grouped rupees to the required display format (Lakhs or Cr)
+        if currency_type == 'Cr':
+            grouped_df['rupees'] = grouped_df['rupees_converted'] / 10000000  # Convert to Cr
+        else:
+            grouped_df['rupees'] = grouped_df['rupees_converted'] / 100000  # Convert to Lakhs
 
-        # Convert to JSON
-        json_result = grouped_df.to_json(orient='records')
-        return json_result, df['rupeese'].sum()
+        # Calculate percentage of the total budget used by department
+        grouped_df['percentage_used'] = round((grouped_df['rupees_converted'] / totalBudget) * 100, 2)
+
+        # Remove rupees_display and directly use rupees column with appropriate formatting
+        if currency_type == 'Cr':
+            grouped_df['rupees'] = grouped_df['rupees'].apply(lambda x: f"{x:.2f} Cr")
+        else:
+            grouped_df['rupees'] = grouped_df['rupees'].apply(lambda x: f"{x:.2f} Lakh")
+
+        # Calculate total budget used in rupees
+        total_budget_used = df['rupees_converted'].sum()
+
+        # Convert total_budget_used based on original totalBudget's currency type
+        if currency_type == 'Cr':
+            total_budget_used_display = f"{total_budget_used / 10000000:.2f} Cr"
+        else:
+            total_budget_used_display = f"{total_budget_used / 100000:.2f} Lakh"
+
+        # Convert the result to JSON with the formatted rupees
+        json_result = grouped_df[['department', 'rupees', 'percentage_used']].to_json(orient='records')
+
+        # Return the JSON result and total budget used in the appropriate format
+        return json_result, total_budget_used_display
 
     except KeyError as e:
         logger.error(f"Missing key in data: {e}")
@@ -190,7 +255,7 @@ def getAllUserCard(request):
         page_size = int(request.query_params.get('page_size', paginator.page_size))
         total_pages = ceil(total_records / page_size)
         
-        usedBudget = str(usedBudget) + currency
+        usedBudget = str(usedBudget)
 
         # Return the successful paginated response with user card data and budget details
         return paginator.get_paginated_response({ 
@@ -229,11 +294,9 @@ def CreateUserCard(request):
         return Response({'status': 'error', 'message': 'Provide all required fields'})
 
     try:
-        
         project, authorized = get_project_and_authorize(user_id, projectId)
         if not authorized:
             return Response({'status': 'error', 'message': 'You are not authorized to view this project'})
-        
         project = Project.objects.get(projectId=int(projectId))
         if project.user_id != int(user_id):
             is_collaborator = ProjectUser.objects.filter(
@@ -251,6 +314,27 @@ def CreateUserCard(request):
             'location': request.data.get('location'),
             'last_edited_by_userId': user_id
         }
+        if (request.data.get('budget')):
+            rupees, currency = request.data.get('budget').strip().split()
+            usedBudget = get_used_budget(projectId)
+            projectBudget, projectCurrency = project.budget.strip().split()
+            if (currency == 'Cr'):
+                rupees = float(rupees) * 10000000
+            else:
+                rupees = float(rupees) * 100000
+            
+            if (projectCurrency == 'Cr'):
+                projectBudget = float(projectBudget) * 10000000
+            else:
+                projectBudget = float(projectBudget) * 100000
+            
+            if (projectBudget < usedBudget+rupees ):
+                return Response({
+                    'status': 'error',
+                    'message': 'Required Budget is Not Available!! Please check Used Budget',
+                    'project_card_user': {},
+                    "user_id": user_id
+                })
 
         serializer = ProjectCardUserSerializer(data=data)
 
@@ -301,6 +385,27 @@ def updateOneUserCard(request):
 
         serializer = ProjectCardUserSerializer(project_card_user, data=request.data, partial=True)
 
+        rupees, currency = request.data.get('budget').strip().split()
+        usedBudget = get_used_budget(projectId)
+        projectBudget, projectCurrency = project.budget.strip().split()
+        if (currency == 'Cr'):
+            rupees = float(rupees) * 10000000
+        else:
+            rupees = float(rupees) * 100000
+        
+        if (projectCurrency == 'Cr'):
+            projectBudget = float(projectBudget) * 10000000
+        else:
+            projectBudget = float(projectBudget) * 100000
+        print(projectBudget , usedBudget, rupees)
+        if (projectBudget < usedBudget+rupees ):
+            return Response({
+                'status': 'error',
+                'message': 'Required Budget is Not Available!! Please check Used Budget',
+                'project_card_user': {},
+                "user_id": user_id
+            })
+        
         if serializer.is_valid():
             updated_project_card_user = serializer.save()
             project_card_user_data = ProjectCardUserSerializer(updated_project_card_user).data
@@ -375,9 +480,27 @@ def updateBudget(request):
         
         # Convert project_id to integer
         project_id = int(project_id)
-        
+        rupees, currency = request.data.get('budget').strip().split()
+        usedBudget = get_used_budget(project_id)
+        projectBudget, projectCurrency = project.budget.strip().split()
+        if (currency == 'Cr'):
+            rupees = float(rupees) * 10000000
+        else:
+            rupees = float(rupees) * 100000
+            
+        if (projectCurrency == 'Cr'):
+            projectBudget = float(projectBudget) * 10000000
+        else:
+            projectBudget = float(projectBudget) * 100000
         # Fetch the project
-        project = Project.objects.get(projectId=project_id)
+        if (rupees < usedBudget): 
+            return Response({
+                'status': 'error',
+                'message': 'Required Budget is less then utilized Budget!! Please check Used Budget',
+                'project_card_user': {},
+                "user_id": user_id
+            })
+        project = Project.objects.get(projectId=project_id)        
         
         # Update the budget
         project.budget = updatedBudget
