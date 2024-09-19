@@ -18,6 +18,7 @@ from utils.authHelper import *
 from rest_framework.pagination import PageNumberPagination
 from math import ceil
 from django.db.models import Sum
+from rest_framework import status
 
 logger = logging.getLogger(__name__)
 
@@ -330,7 +331,7 @@ def CreateUserCard(request):
             
             if (projectBudget < usedBudget+rupees ):
                 return Response({
-                    'status': 'error',
+                    'status': status.HTTP_400_BAD_REQUEST,
                     'message': 'Required Budget is Not Available!! Please check Used Budget',
                     'project_card_user': {},
                     "user_id": user_id
@@ -400,7 +401,7 @@ def updateOneUserCard(request):
         print(projectBudget , usedBudget, rupees)
         if (projectBudget < usedBudget+rupees ):
             return Response({
-                'status': 'error',
+                'status': status.HTTP_400_BAD_REQUEST,
                 'message': 'Required Budget is Not Available!! Please check Used Budget',
                 'project_card_user': {},
                 "user_id": user_id
@@ -495,7 +496,7 @@ def updateBudget(request):
         # Fetch the project
         if (rupees < usedBudget): 
             return Response({
-                'status': 'error',
+                'status': status.HTTP_400_BAD_REQUEST,
                 'message': 'Required Budget is less then utilized Budget!! Please check Used Budget',
                 'project_card_user': {},
                 "user_id": user_id
