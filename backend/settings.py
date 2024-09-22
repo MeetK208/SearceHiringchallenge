@@ -80,7 +80,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',  # Add this
 
 ]
-"""
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",   # Frontend running locally
     "http://127.0.0.1:3000",   # Frontend with localhost IP
@@ -88,9 +88,9 @@ CORS_ALLOWED_ORIGINS = [
     "https://yourfrontenddomain.com",  # Deployed frontend
     "https://searcehiringchallenge.onrender.com",  # Deployed backend
     "http://localhost:4200",
+    "https://resonant-croissant-4829a2.netlify.app/",
 ]
-"""
-CORS_ALLOWED_ORIGINS = ["*"]
+#CORS_ALLOWED_ORIGINS = ["*"]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -143,7 +143,7 @@ else:
     print("Deployment Server Running.......")
     DEBUG = False
     CORS_ALLOW_CREDENTIALS = True
-    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOW_ALL_ORIGINS = True
     CSRF_TRUSTED_ORIGINS = [
         "http://localhost:4200",
         "http://127.0.0.1:8000",
