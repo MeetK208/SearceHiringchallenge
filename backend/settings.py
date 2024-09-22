@@ -88,7 +88,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://yourfrontenddomain.com",  # Deployed frontend
     "https://searcehiringchallenge.onrender.com",  # Deployed backend
     "http://localhost:4200",
-    "https://resonant-croissant-4829a2.netlify.app/",
+    "https://resonant-croissant-4829a2.netlify.app",
 ]
 #CORS_ALLOWED_ORIGINS = ["*"]
 MIDDLEWARE = [
