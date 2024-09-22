@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-e)21&&p2&ck1_k)r(8mu^8+-%3y%yw)(csmn5(p1j*)yzh_6#)
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
 
-ALLOWED_HOSTS = ["searcehiringchallenge.onrender.com", "*", "127.0.0.1", "0.0.0.0"]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -80,7 +80,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',  # Add this
 
 ]
-
+"""
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",   # Frontend running locally
     "http://127.0.0.1:3000",   # Frontend with localhost IP
@@ -89,7 +89,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://searcehiringchallenge.onrender.com",  # Deployed backend
     "http://localhost:4200",
 ]
-
+"""
+CORS_ALLOWED_ORIGINS = ["*"]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -135,7 +136,8 @@ if os.environ.get("DEBUG") == "True":
     CSRF_TRUSTED_ORIGINS = [
         "http://localhost:4200", 
         "http://127.0.0.1:8000", 
-        "https://searcehiringchallenge.onrender.com"
+        "https://searcehiringchallenge.onrender.com",
+        "https://resonant-croissant-4829a2.netlify.app/",
     ]
 else:
     print("Deployment Server Running.......")
@@ -146,6 +148,7 @@ else:
         "http://localhost:4200",
         "http://127.0.0.1:8000",
         "https://searcehiringchallenge.onrender.com",
+        "https://resonant-croissant-4829a2.netlify.app/",
     ]
     
 if os.environ.get("DEBUG") == "True":
